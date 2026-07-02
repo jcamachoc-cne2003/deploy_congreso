@@ -299,8 +299,6 @@ const onEachFeature = (feature: any, layer: any) => {
             style={estiloGeoJson}
             onEachFeature={onEachFeature}
             pointToLayer={mapearPuntosATexto}
-            smoothFactor={0} 
-            noClip={true}
           />
         </MapContainer>
       )}
