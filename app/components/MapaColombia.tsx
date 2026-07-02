@@ -116,7 +116,7 @@ const obtenerColorPorTendencia = useCallback((nombreDepto: string) => {
     return "#f8fafc";
   }, [congresistas, votos, proyectoSeleccionado, modoMapa]); // <-- Agregamos modoMapa a las dependencias
 
-  const estiloGeoJson = useCallback((feature: any) => {
+  const estiloGeoJson = useCallback((feature: any): L.PathOptions => {
     const nombreDepto = feature.properties?.NOMBRE_DPT || feature.properties?.name;
     const colorDinamico = obtenerColorPorTendencia(nombreDepto);
 
