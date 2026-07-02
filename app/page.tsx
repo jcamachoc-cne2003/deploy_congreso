@@ -47,8 +47,20 @@ interface Voto {
 }
 
 function MenuItem({ icon, label, href = "#" }: { icon: string, label: string, href?: string }) {
+  // Función para manejar el clic en botones no funcionales
+  const handleClick = (e: React.MouseEvent) => {
+    if (href === "#") {
+      e.preventDefault(); // Evita que la página recargue o suba al inicio
+      alert(`⚠️ El módulo de "${label}" se encuentra actualmente EN DESARROLLO.`);
+    }
+  };
+
   return (
-    <Link href={href} className="flex items-center p-4 hover:bg-slate-800 transition-colors group/item rounded-xl mx-2">
+    <Link 
+      href={href} 
+      onClick={handleClick}
+      className="flex items-center p-4 hover:bg-slate-800 transition-colors group/item rounded-xl mx-2"
+    >
       <span className="text-xl min-w-[40px] flex justify-center">{icon}</span>
       <span className="ml-4 font-bold text-slate-400 group-hover/item:text-white opacity-0 group-hover:opacity-100 transition-all duration-300 whitespace-nowrap overflow-hidden">
         {label}
