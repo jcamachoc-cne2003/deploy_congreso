@@ -37,6 +37,7 @@ interface Proyecto {
   COD_PROYECTO: number;
   DESCRIPCION: string;
   PLENARIA: string;
+  CONGRESO?: string;
   MAYORIA?: 'SIMPLE' | 'ABSOLUTA' | 'CALIFICADA' | 'ESPECIAL'; // 👈 NUEVO CAMPO
 }
 
@@ -76,10 +77,83 @@ export default function DashboardLegislativo() {
     const [modalCrearProyecto, setModalCrearProyecto] = useState(false);
   const [modalEliminar, setModalEliminar] = useState(false);
   
-  // Variables del formulario del nuevo proyecto
+// Variables del formulario del nuevo proyecto
   const [nuevaDesc, setNuevaDesc] = useState('');
-  const [nuevaPlenaria, setNuevaPlenaria] = useState('CAMARA');
+  const [nuevoCongreso, setNuevoCongreso] = useState('CAMARA'); // 👈 Estado para Congreso
+  const [nuevaPlenaria, setNuevaPlenaria] = useState('PLENO');  // 👈 Estado para Plenaria (Por defecto PLENO)
   const [nuevaMayoria, setNuevaMayoria] = useState<'SIMPLE'|'ABSOLUTA'|'CALIFICADA'|'ESPECIAL'>('SIMPLE');
+
+ const [modalEditarProyecto, setModalEditarProyecto] = useState(false);
+  const [editDesc, setEditDesc] = useState('');
+  const [editCongreso, setEditCongreso] = useState('CAMARA');
+  const [editPlenaria, setEditPlenaria] = useState('PLENO');
+  const [editMayoria, setEditMayoria] = useState<'SIMPLE'|'ABSOLUTA'|'CALIFICADA'|'ESPECIAL'>('SIMPLE');
+
+  // Función para abrir el modal de edición cargando los datos actuales
+  const abrirModalEditar = () => {
+    const proyectoActual = proyectos.find(p => p.COD_PROYECTO === proyectoSeleccionado);
+    if (proyectoActual) {
+      setEditDesc(proyectoActual.DESCRIPCION);
+      setEditCongreso(proyectoActual.CONGRESO || 'CAMARA');
+      setEditPlenaria(proyectoActual.PLENARIA);
+      setEditMayoria(proyectoActual.MAYORIA || 'SIMPLE');
+      setModalEditarProyecto(true);
+    }
+  };
+
+  const handleEditCongresoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const seleccion = e.target.value;
+    setEditCongreso(seleccion);
+    if (seleccion === 'CONGRESO EN PLENO') {
+      setEditPlenaria('PLENO');
+    }
+  };
+
+  // Función para guardar los cambios en Supabase
+  const ejecutarEditarProyecto = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editDesc.trim() || !proyectoSeleccionado) return;
+    
+    setCargando(true);
+    try {
+      const { error } = await supabase
+        .from('PROYECTOS')
+        .update({ 
+          DESCRIPCION: editDesc.trim(),
+          CONGRESO: editCongreso,
+          PLENARIA: editPlenaria,
+          MAYORIA: editMayoria
+        })
+        .eq('COD_PROYECTO', proyectoSeleccionado);
+
+      if (error) throw error;
+
+      // Actualizamos la memoria de React
+      setProyectos(prev => prev.map(p => 
+        p.COD_PROYECTO === proyectoSeleccionado 
+          ? { ...p, DESCRIPCION: editDesc.trim(), CONGRESO: editCongreso, PLENARIA: editPlenaria, MAYORIA: editMayoria }
+          : p
+      ));
+      
+      setModalEditarProyecto(false);
+    } catch (err: any) {
+      alert(`Error al editar proyecto: ${err.message || 'Desconocido'}`);
+    } finally {
+      setCargando(false);
+    }
+  };
+
+
+
+  // Función para manejar el cambio en el selector de Congreso
+  const handleCongresoChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const seleccion = e.target.value;
+    setNuevoCongreso(seleccion);
+    // Si es CONGRESO EN PLENO, forzar la plenaria a PLENO
+    if (seleccion === 'CONGRESO EN PLENO') {
+      setNuevaPlenaria('PLENO');
+    }
+  };
 
 useEffect(() => {
     const sesionGuardada = localStorage.getItem('usuario_congreso');
@@ -149,7 +223,8 @@ const ejecutarCrearProyecto = async (e: React.FormEvent) => {
         .from('PROYECTOS')
         .insert([{ 
           DESCRIPCION: nuevaDesc.trim(), 
-          PLENARIA: nuevaPlenaria,
+          CONGRESO: nuevoCongreso,   // 👈 Guardamos el nuevo valor
+          PLENARIA: nuevaPlenaria,   // 👈 Ahora será PLENO o COMISION X
           MAYORIA: nuevaMayoria
         }])
         .select();
@@ -480,11 +555,11 @@ function LogoPartido({ codPartido }: { codPartido: string }) {
 
 return (
     <main className="h-screen bg-slate-50 text-slate-800 flex flex-row overflow-hidden selection:bg-blue-100 relative">
-      <aside className="group w-20 hover:w-80 bg-slate-900 h-full flex flex-col transition-all duration-300 ease-in-out z-[101] shadow-2xl shrink-0 border-r border-slate-800">
+      <aside className="group w-20 hover:w-80 bg-blue-900 h-full flex flex-col transition-all duration-300 ease-in-out z-[101] shadow-2xl shrink-0 border-r border-slate-800">
       <div className="h-16 flex items-center px-6 mb-6 border-b border-slate-800 shrink-0">
         <span className="text-2xl">🏛️</span>
         <span className="ml-4 font-black text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 whitespace-nowrap">
-          MENÚ <span className="text-blue-500">SISTEMA</span>
+          MENÚ <span className="text-amber-500">SISTEMA</span>
         </span>
       </div>
 
@@ -506,14 +581,14 @@ return (
 
      <div className="flex-1 flex flex-col min-w-0"> 
       {/* 🚀 1. ENCABEZADO PRINCIPAL (NAVBAR) */}
-       <header className="w-full bg-slate-900 text-white shadow-lg shrink-0 h-16 z-[100] relative">
+       <header className="w-full bg-blue-900 text-white shadow-lg shrink-0 h-16 z-[100] relative">
         <div className="w-full max-w-[1600px] mx-auto px-6 h-full flex items-center justify-between">
           
           {/* LADO IZQUIERDO: LOGO */}
           <div className="flex items-center gap-3">
             <span className="text-2xl drop-shadow-md">🏛️</span>
             <h1 className="text-xl font-black tracking-tight text-white">
-              Congreso <span className="text-blue-500">Virtual</span>
+              Congreso <span className="text-amber-500">Virtual</span>
             </h1>
           </div>
 
@@ -562,7 +637,11 @@ return (
             <div>
               <h2 className="text-lg font-bold text-slate-900">CONGRESO DE LA REPUPLICA</h2>
               <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest mt-0.5">
-  {proyectos.find(p => p.COD_PROYECTO === proyectoSeleccionado)?.PLENARIA || 'Cargando...'}
+  {(() => {
+    const p = proyectos.find(p => p.COD_PROYECTO === proyectoSeleccionado);
+    if (!p) return 'Cargando...';
+    return p.CONGRESO ? `${p.CONGRESO} - ${p.PLENARIA}` : p.PLENARIA;
+  })()}
 </p>
             </div>
             <div className="flex flex-col items-end">
@@ -723,9 +802,11 @@ return (
           )}
         </div>
 
-          <div className="lg:col-span-1 lg:row-span-1 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex flex-col justify-between h-full overflow-hidden">
-            <div>
-              <h2 className="text-xl font-black mb-4">🗂️ Gestión De proyectos vigentes</h2>
+<div className="lg:col-span-1 lg:row-span-1 bg-white border border-slate-200 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col h-full overflow-hidden">
+            
+            {/* 1. CABECERA Y SELECTOR (Fijos arriba, no se encogen) */}
+            <div className="shrink-0 mb-3">
+              <h2 className="text-xl font-black mb-3">🗂️ Gestión De proyectos</h2>
               <select 
                 value={proyectoSeleccionado} 
                 onChange={(e) => setProyectoSeleccionado(Number(e.target.value))} 
@@ -733,26 +814,85 @@ return (
               >
                 {proyectos.map(p => (
                   <option key={p.COD_PROYECTO} value={p.COD_PROYECTO}>
-                    [{p.COD_PROYECTO}] {p.DESCRIPCION.substring(0, 50)}
+                    [{p.COD_PROYECTO}] {p.DESCRIPCION.substring(0, 50)}...
                   </option>
                 ))}
               </select>
             </div>
 
-            {/* BOTONES DE ACCIÓN: CREAR Y ELIMINAR */}
-            <div className="grid grid-cols-2 gap-3 mt-4">
+            {/* 2. FICHA TÉCNICA DINÁMICA (Aquí está la magia del scroll natural sin h-full interno) */}
+            <div className="flex-1 overflow-y-auto scrollbar-thin pr-2 mb-4">
+              {(() => {
+                const infoActual = proyectos.find(p => p.COD_PROYECTO === proyectoSeleccionado);
+                
+                if (!infoActual) return (
+                  <div className="flex items-center justify-center h-full text-slate-400 font-semibold text-sm">
+                    No hay proyectos registrados
+                  </div>
+                );
+
+                return (
+                  // AL QUITAR "h-full" AQUÍ, EL CONTENEDOR CRECE CON EL TEXTO Y NADA SE SOBREPONE
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex flex-col shadow-inner h-auto">
+                    
+                    {/* Descripción Completa */}
+                    <div className="mb-4">
+                      <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción Completa</span>
+                      <p className="text-xs md:text-sm font-semibold text-slate-700 leading-relaxed text-justify break-words">
+                        {infoActual.DESCRIPCION}
+                      </p>
+                    </div>
+
+                    {/* Metadatos (Badges) siempre empujados hacia abajo por la descripción */}
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200">
+                      <div>
+                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Congreso</span>
+                        <span className="block bg-white border border-slate-200 text-slate-700 text-[10px] font-black px-2 py-1 rounded shadow-sm truncate text-center">
+                          {infoActual.CONGRESO || 'N/A'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate">Plenaria / Comisión</span>
+                        <span className="block bg-white border border-slate-200 text-slate-700 text-[10px] font-black px-2 py-1 rounded shadow-sm truncate text-center">
+                          {infoActual.PLENARIA || 'N/A'}
+                        </span>
+                      </div>
+                      <div className="col-span-2">
+                        <span className="block text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1 text-center">Tipo de Mayoría Requerida</span>
+                        <span className="block bg-blue-100 border border-blue-200 text-blue-700 text-[10px] font-black px-2 py-1. rounded shadow-sm text-center tracking-wider">
+                          MAYORÍA {infoActual.MAYORIA || 'SIMPLE'}
+                        </span>
+                      </div>
+                    </div>
+
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 3. BOTONES DE ACCIÓN (Fijos abajo, no se encogen) */}
+            <div className="grid grid-cols-3 gap-2 shrink-0 mt-auto">
               <button 
                 onClick={() => setModalCrearProyecto(true)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs px-2 py-3.5 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-1"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-[10px] px-1 py-3 rounded-xl shadow-md transition-all active:scale-95 flex flex-col items-center justify-center gap-1"
               >
-                ➕ CREAR NUEVO
+                <span className="text-sm">➕</span> NUEVO
               </button>
+              
+              <button 
+                onClick={abrirModalEditar}
+                disabled={!proyectoSeleccionado || proyectos.length === 0}
+                className="w-full bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 font-bold text-[10px] px-1 py-3 rounded-xl shadow-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="text-sm">✏️</span> EDITAR
+              </button>
+
               <button 
                 onClick={() => setModalEliminar(true)}
                 disabled={!proyectoSeleccionado || proyectos.length === 0}
-                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-xs px-2 py-3.5 rounded-xl shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 font-bold text-[10px] px-1 py-3 rounded-xl shadow-sm transition-all active:scale-95 flex flex-col items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🗑️ ELIMINAR
+                <span className="text-sm">🗑️</span> BORRAR
               </button>
             </div>
           </div>
@@ -886,34 +1026,50 @@ return (
               </div>
 
               <div className="grid grid-cols-2 gap-4">
+                {/* 1. Selector de Congreso */}
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Congreso</label>
+                  <select 
+                    value={nuevoCongreso} 
+                    onChange={handleCongresoChange}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="CAMARA">CÁMARA</option>
+                    <option value="SENADO">SENADO</option>
+                    <option value="CONGRESO EN PLENO">CONGRESO EN PLENO</option>
+                  </select>
+                </div>
+
+                {/* 2. Selector de Plenaria/Comisión (Dependiente) */}
                 <div>
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Plenaria / Comisión</label>
                   <select 
                     value={nuevaPlenaria} 
                     onChange={(e) => setNuevaPlenaria(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer"
+                    disabled={nuevoCongreso === 'CONGRESO EN PLENO'}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="CAMARA">CÁMARA</option>
-                    <option value="SENADO">SENADO</option>
-                    {[1, 2, 3, 4, 5, 6, 7, 8].map(num => (
+                    <option value="PLENO">PLENO</option>
+                    {[1, 2, 3, 4, 5, 6, 7].map(num => (
                       <option key={num} value={`COMISION ${num}`}>COMISIÓN {num}</option>
                     ))}
                   </select>
                 </div>
+              </div>
 
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Mayoría</label>
-                  <select 
-                    value={nuevaMayoria} 
-                    onChange={(e) => setNuevaMayoria(e.target.value as any)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer"
-                  >
-                    <option value="SIMPLE">SIMPLE</option>
-                    <option value="ABSOLUTA">ABSOLUTA</option>
-                    <option value="CALIFICADA">CALIFICADA (2/3)</option>
-                    <option value="ESPECIAL">ESPECIAL (75%)</option>
-                  </select>
-                </div>
+              {/* 3. Selector de Tipo de Mayoría (Pasado a una fila completa para mantener estética) */}
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Mayoría</label>
+                <select 
+                  value={nuevaMayoria} 
+                  onChange={(e) => setNuevaMayoria(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="SIMPLE">SIMPLE</option>
+                  <option value="ABSOLUTA">ABSOLUTA</option>
+                  <option value="CALIFICADA">CALIFICADA (2/3)</option>
+                  <option value="ESPECIAL">ESPECIAL (75%)</option>
+                </select>
               </div>
 
               <button 
@@ -927,6 +1083,89 @@ return (
           </div>
         </div>
       )}
+
+      {/* 🟠 MODAL: EDITAR PROYECTO */}
+      {modalEditarProyecto && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden p-8 relative">
+            <button onClick={() => setModalEditarProyecto(false)} className="absolute top-6 right-6 text-slate-400 hover:text-slate-700 text-xl font-bold">✕</button>
+            
+            <div className="flex items-center gap-3 mb-1">
+              <span className="text-2xl">✏️</span>
+              <h2 className="text-2xl font-black text-slate-900">Editar Proyecto</h2>
+            </div>
+            <p className="text-xs font-bold text-amber-600 bg-amber-50 px-3 py-1.5 rounded-lg mb-6 inline-block border border-amber-200">
+              Modificando Proyecto ID: [{proyectoSeleccionado}]
+            </p>
+
+            <form onSubmit={ejecutarEditarProyecto} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Proyecto</label>
+                <textarea 
+                  required
+                  rows={3}
+                  value={editDesc}
+                  onChange={(e) => setEditDesc(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Congreso</label>
+                  <select 
+                    value={editCongreso} 
+                    onChange={handleEditCongresoChange}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="CAMARA">CÁMARA</option>
+                    <option value="SENADO">SENADO</option>
+                    <option value="CONGRESO EN PLENO">CONGRESO EN PLENO</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Plenaria / Comisión</label>
+                  <select 
+                    value={editPlenaria} 
+                    onChange={(e) => setEditPlenaria(e.target.value)}
+                    disabled={editCongreso === 'CONGRESO EN PLENO'}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed focus:ring-2 focus:ring-amber-500"
+                  >
+                    <option value="PLENO">PLENO</option>
+                    {[1, 2, 3, 4, 5, 6, 7].map(num => (
+                      <option key={num} value={`COMISION ${num}`}>COMISIÓN {num}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Tipo de Mayoría</label>
+                <select 
+                  value={editMayoria} 
+                  onChange={(e) => setEditMayoria(e.target.value as any)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-3 text-xs font-bold text-slate-700 cursor-pointer focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="SIMPLE">SIMPLE</option>
+                  <option value="ABSOLUTA">ABSOLUTA</option>
+                  <option value="CALIFICADA">CALIFICADA (2/3)</option>
+                  <option value="ESPECIAL">ESPECIAL (75%)</option>
+                </select>
+              </div>
+
+              <button 
+                type="submit" 
+                disabled={cargando}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-6 py-4 rounded-xl shadow-md transition-all mt-6 disabled:opacity-50"
+              >
+                {cargando ? 'GUARDANDO...' : '💾 GUARDAR CAMBIOS'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
 
       {/* 🔴 MODAL: CONFIRMAR ELIMINACIÓN */}
       {modalEliminar && (

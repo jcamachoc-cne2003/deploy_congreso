@@ -13,6 +13,7 @@ export default function Login({ onLoginExitoso }: { onLoginExitoso: (nombreUsuar
   const [clave, setClave] = useState('');
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+  const [mostrarClave, setMostrarClave] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,70 +42,116 @@ export default function Login({ onLoginExitoso }: { onLoginExitoso: (nombreUsuar
   };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex items-center justify-center p-4 selection:bg-blue-100">
-      <div className="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 animate-fadeIn">
+    <div 
+      className="min-h-screen bg-no-repeat bg-[length:100%_100%] bg-center flex items-start pt-16 pb-6 px-6 md:pt-[8vh] md:pl-[270px] selection:bg-yellow-100 relative overflow-hidden font-sans"
+    style={{ backgroundImage: "url('/Media/Background_login.png')" }}
+    >
+      
+      {/* Contenedor del Formulario Blanco */}
+      <div className="bg-white w-full max-w-[420px] rounded-3xl shadow-2xl overflow-hidden border border-slate-100 z-20">
         
-        {/* Encabezado */}
-        <div className="bg-slate-900 px-8 py-10 text-center relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
-          <span className="text-5xl drop-shadow-md block mb-4">🏛️</span>
-          <h1 className="text-2xl font-black tracking-tight text-white mb-1">
-            Congreso <span className="text-blue-500">Virtual</span>
+        {/* Encabezado con el Logo, Títulos y Separador */}
+        <div className="px-10 ptx-6 pb-4 text-center flex flex-col items-center">
+          <img 
+            src="/Media/Logo.png" 
+            alt="Logo Congreso de la República" 
+            className="w-auto h-28 object-contain mb-4"
+          />
+          
+          {/* Título Principal */}
+          <h1 className="text-[#001f4d] font-serif font-bold text-2xl tracking-wide uppercase mb-1">
+            CONGRESO EN ACCIÓN
           </h1>
-          <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">
-            Acceso Administrativo
+          
+          {/* Eslogan / Subtítulo */}
+          <p className="text-slate-600 italic text-sm mb-2">
+            Inteligencia legislativa al servicio del país
+          </p>
+          
+          {/* Línea Divisoria */}
+          <hr className="w-full border-t border-slate-300 mb-2" />
+
+          {/* Descripción de la plataforma */}
+          <p className="text-xs text-slate-500 leading-relaxed px-2">
+            Plataforma de votación y seguimientos de proyectos Congreso de la República de Colombia.
           </p>
         </div>
 
-        {/* Formulario */}
-        <div className="p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Formulario de Entrada */}
+        <div className="px-10 pb-6 pt-2">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-[#001f4d] uppercase tracking-wider mb-2">
                 Usuario
               </label>
-              <input 
-                type="text" 
-                value={usuario}
-                onChange={(e) => setUsuario(e.target.value)}
-                required
-                autoComplete="off"
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="Ingrese su usuario"
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">👤</span>
+                <input 
+                  type="text" 
+                  value={usuario}
+                  onChange={(e) => setUsuario(e.target.value)}
+                  required
+                  autoComplete="off"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all placeholder:text-slate-400"
+                  placeholder="Ingrese su usuario"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-black text-slate-500 uppercase tracking-widest mb-2">
+              <label className="block text-xs font-bold text-[#001f4d] uppercase tracking-wider mb-2">
                 Contraseña
               </label>
-              <input 
-                type="password" /* 👈 Esto pone los asteriscos automáticamente */
-                value={clave}
-                onChange={(e) => setClave(e.target.value)}
-                required
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-700 shadow-inner focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔒</span>
+                <input 
+                  type={mostrarClave ? "text" : "password"}
+                  value={clave}
+                  onChange={(e) => setClave(e.target.value)}
+                  required
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-12 py-3.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition-all placeholder:text-slate-400"
+                  placeholder="Ingrese su contraseña"
+                />
+                <button 
+                  type="button"
+                  onClick={() => setMostrarClave(!mostrarClave)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors text-lg"
+                >
+                  {mostrarClave ? '🙈' : '👁️'}
+                </button>
+              </div>
             </div>
 
             {error && (
-              <div className="bg-rose-50 text-rose-600 border border-rose-200 text-xs font-bold p-3 rounded-lg text-center animate-bounce">
-                ❌ {error}
+              <div className="bg-rose-50 text-rose-600 border border-rose-100 text-xs font-semibold p-3.5 rounded-lg text-center">
+                ⚠️ {error}
               </div>
             )}
 
             <button 
               type="submit" 
               disabled={cargando}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm px-6 py-4 rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-70"
+              className="w-full bg-[#001f4d] hover:bg-[#002a66] text-white font-bold text-base px-6 py-4 rounded-xl shadow-lg transition-all active:scale-[0.98] flex items-center justify-center gap-2 mt-6 disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {cargando ? 'Verificando...' : 'Iniciar Sesión'}
+              <span>🔒</span> {cargando ? 'Verificando...' : 'Ingresar'}
             </button>
           </form>
-        </div>
 
+          {/* Banner de información inferior interior */}
+          <div className="mt-6 flex items-center gap-3 bg-slate-50 border border-slate-100 p-3.5 rounded-xl text-slate-600 text-xs leading-normal">
+            <span className="text-xl shrink-0">🛡️</span>
+            <p>Seguridad, transparencia y trazabilidad en cada votación</p>
+          </div>
+          
+          {/* Barra tricolor decorativa en la base de la tarjeta */}
+          <div className="flex h-1.5 mt-6 rounded-full overflow-hidden">
+            <div className="w-1/3 bg-yellow-400"></div>
+            <div className="w-1/3 bg-blue-600"></div>
+            <div className="w-1/3 bg-red-600"></div>
+          </div>
+        </div>
       </div>
+
     </div>
   );
 }
